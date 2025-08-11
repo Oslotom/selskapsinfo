@@ -66,11 +66,8 @@
   <section class="py-10 sm:py-12">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
       <div id="results" class="hidden">
-        <h2 class="text-xl sm:text-2xl font-extrabold mb-4">Resultat</h2>
-        <div class="grid md:grid-cols-2 gap-6">
-          <div class="rounded-2xl border border-slate-200 bg-white p-4"><div class="text-sm font-semibold text-slate-700 mb-2">Selskapsinfo</div><pre id="company" class="text-xs whitespace-pre-wrap"></pre></div>
-          <div class="rounded-2xl border border-slate-200 bg-white p-4"><div class="text-sm font-semibold text-slate-700 mb-2">Regnskap (nøkkeltall – siste år)</div><pre id="accounts" class="text-xs whitespace-pre-wrap"></pre></div>
-        </div>
+        <h2 class="text-xl sm:text-2xl font-extrabold mb-4">Treff</h2>
+        <ul id="company-list" class="list-disc pl-5 text-left space-y-1"></ul>
         <p id="hint" class="mt-4 text-sm text-slate-500"></p>
       </div>
     </div>
@@ -240,57 +237,28 @@ MP_PRIVATE_KEY_PEM=-----BEGIN PRIVATE KEY-----
       return r.json();
     }
 
-    async function runLookup(query){
+    async function searchCompanies(query){
       const resEl = document.getElementById('results');
-      const companyEl = document.getElementById('company');
-      const accountsEl = document.getElementById('accounts');
+      const listEl = document.getElementById('company-list');
       const hintEl = document.getElementById('hint');
       resEl.classList.remove('hidden');
-      companyEl.textContent = 'Søker...';
-      accountsEl.textContent = '';
+      listEl.innerHTML = '<li>Søker...</li>';
       hintEl.textContent = '';
 
       try {
-        // 1) Finn enheten via proxy -> Enhetsregisteret (åpent)
-        const searchUrl = `/api/enheter?navn=${encodeURIComponent(query)}&size=1`;
+        const searchUrl = `/api/enheter?navn=${encodeURIComponent(query)}&size=10`;
         const er = await fetchJSON(searchUrl);
-        const hit = er?._embedded?.enheter?.[0];
-        if(!hit){
-          companyEl.textContent = 'Ingen treff.';
-          accountsEl.textContent = '';
+        const hits = er?._embedded?.enheter || [];
+        if(hits.length === 0){
+          listEl.innerHTML = '<li>Ingen treff.</li>';
           hintEl.textContent = 'Tips: prøv eksakt firmanavn eller org.nr.';
           return;
         }
-        companyEl.textContent = JSON.stringify({
-          navn: hit.navn,
-          orgnr: hit.organisasjonsnummer,
-          adr: hit.forretningsadresse || hit.postadresse || null,
-          naeringskode: hit.naeringskode1,
-          stiftet: hit.stiftelsesdato,
-          hjemmeside: hit.hjemmeside
-        }, null, 2);
-
-        // 2) Hent regnskap via proxy -> Regnskapsregisteret (åpent, siste år)
-        const orgnr = hit.organisasjonsnummer;
-        const accUrl = `/api/regnskap/${orgnr}`;
-        try{
-          const acc = await fetchJSON(accUrl);
-          accountsEl.textContent = JSON.stringify(acc, null, 2);
-          // Prøv historikk (krever Maskinporten konfigurert på server)
-          try {
-            const hist = await fetchJSON(`/api/regnskap/${orgnr}/historikk?fraAar=2019`);
-            accountsEl.textContent += "\n\nHistorikk (fra 2019):\n" + JSON.stringify(hist, null, 2);
-            hintEl.textContent = 'Historikk hentet via Maskinporten (server).';
-          } catch (histErr) {
-            hintEl.textContent = 'NB: For historikk kreves Maskinporten. Sett MP_* i .env.';
-          }
-        } catch(e){
-          accountsEl.textContent = `Kunne ikke hente regnskap (CORS/Proxy/Upstream): ${e.message}`;
-          hintEl.textContent = 'Start server-proxyen (server.js) og prøv igjen.';
-        }
+        listEl.innerHTML = hits.map(h =>
+          `<li><a class="text-emerald-600 hover:underline" href="selskapsanalyse.html?orgnr=${h.organisasjonsnummer}">${h.navn} (${h.organisasjonsnummer})</a></li>`
+        ).join('');
       } catch (e){
-        companyEl.textContent = `Feil: ${e.message}`;
-        accountsEl.textContent = '';
+        listEl.innerHTML = `<li>Feil: ${e.message}</li>`;
       }
     }
 
@@ -298,7 +266,7 @@ MP_PRIVATE_KEY_PEM=-----BEGIN PRIVATE KEY-----
       e.preventDefault();
       const q = document.getElementById('q').value.trim();
       if(!q) return false;
-      runLookup(q);
+      searchCompanies(q);
       return false;
     }
 
