@@ -1,0 +1,12 @@
+{
+  "name": "selskapsinfo",
+  "version": "1.0.0",
+  "description": "Landing page for selskapsanalyse",
+  "scripts": {
+    "start": "lite-server",
+    "test": "echo \"No tests specified\""
+  },
+  "devDependencies": {
+    "lite-server": "^2.6.1"
+  }
+}
