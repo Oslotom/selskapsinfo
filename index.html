@@ -82,33 +82,20 @@
       <h2 class="text-lg font-bold mb-3">server.js (proxy)</h2>
       <pre class="text-xs bg-slate-900 text-slate-100 p-4 rounded-xl overflow-auto"><code>// server.js - Node/Express proxy for Brønnøysund + Maskinporten (lukket)
 // 1) npm init -y
-// 2) npm i express node-fetch cors dotenv basic-auth jose
+// 2) npm i express node-fetch cors dotenv jose
 // 3) node server.js
 
 import express from 'express';
 import fetch from 'node-fetch';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import basicAuth from 'basic-auth';
 import { SignJWT, importPKCS8 } from 'jose';
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Basic auth beskyttelse av API
-const API_USER = process.env.PROXY_USER || 'oslotom';
-const API_PASS = process.env.PROXY_PASS || 'oslotom';
-app.use('/api', (req, res, next) => {
-  const creds = basicAuth(req);
-  if (!creds || creds.name !== API_USER || creds.pass !== API_PASS) {
-    res.set('WWW-Authenticate', 'Basic realm="Access"');
-    return res.status(401).send('Authentication required.');
-  }
-  next();
-});
-
-app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
+app.use('/api', cors({ origin: process.env.CORS_ORIGIN || true }));
 
 async function proxyJSON(url, init = {}) {
   const r = await fetch(url, { headers: { Accept: 'application/json' }, ...init });
@@ -215,10 +202,8 @@ app.listen(PORT, () => console.log(`Proxy running on http://localhost:${PORT}`))
 </code></pre>
 
       <h3 class="text-sm font-semibold mt-6 mb-2">.env</h3>
-      <pre class="text-xs bg-slate-900 text-slate-100 p-4 rounded-xl overflow-auto"><code>CORS_ORIGIN=http://localhost:3000
+        <pre class="text-xs bg-slate-900 text-slate-100 p-4 rounded-xl overflow-auto"><code>CORS_ORIGIN=http://localhost:3000
 PORT=3001
-PROXY_USER=oslotom
-PROXY_PASS=oslotom
 # ==== Maskinporten (fyll inn fra Digdir-oppsettet) ====
 MP_CLIENT_ID=
 MP_TOKEN_ENDPOINT=

@@ -2,25 +2,12 @@ import express from 'express';
 import fetch from 'node-fetch';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import basicAuth from 'basic-auth';
 import { SignJWT, importPKCS8 } from 'jose';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Basic auth protection for API routes
-const API_USER = process.env.PROXY_USER || 'oslotom';
-const API_PASS = process.env.PROXY_PASS || 'oslotom';
-app.use('/api', (req, res, next) => {
-  const creds = basicAuth(req);
-  if (!creds || creds.name !== API_USER || creds.pass !== API_PASS) {
-    res.set('WWW-Authenticate', 'Basic realm="Access"');
-    return res.status(401).send('Authentication required.');
-  }
-  next();
-});
 
 app.use('/api', cors({ origin: process.env.CORS_ORIGIN || true }));
 
