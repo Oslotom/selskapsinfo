@@ -244,7 +244,10 @@ MP_PRIVATE_KEY_PEM=-----BEGIN PRIVATE KEY-----
 
       try {
         // 1) Finn enheten via proxy -> Enhetsregisteret (åpent)
-        const searchUrl = `/api/enheter?navn=${encodeURIComponent(query)}&size=1`;
+        const isOrgNr = /^\d{9}$/.test(query);
+        const searchUrl = isOrgNr
+          ? `/api/enheter?organisasjonsnummer=${query}&size=1`
+          : `/api/enheter?navn=${encodeURIComponent(query)}&size=1`;
         const er = await fetchJSON(searchUrl);
         const hit = er?._embedded?.enheter?.[0];
         if(!hit){
@@ -304,6 +307,13 @@ MP_PRIVATE_KEY_PEM=-----BEGIN PRIVATE KEY-----
       var yearEl = document.getElementById('year');
       console.assert(!!yearEl, 'Hidden #year element should exist');
       if (yearEl) { yearEl.textContent = new Date().getFullYear(); }
+      var params = new URLSearchParams(window.location.search);
+      var org = params.get('orgnr');
+      if (org) {
+        var qEl = document.getElementById('q');
+        if (qEl) qEl.value = org;
+        runLookup(org);
+      }
     });
   </script>
 </body>
